@@ -1,0 +1,62 @@
+# Click — Board Game Meetup Schedule Voting App
+
+This project is a schedule-voting web app for board game meetups.
+
+## Stack
+
+- Next.js App Router + TypeScript (strict)
+- Tailwind CSS
+- Supabase (`@supabase/ssr`, `@supabase/supabase-js`)
+- lucide-react, clsx, tailwind-merge
+
+## TypeScript
+
+- Prefer `type` over `interface` unless declaration merging is needed.
+- Do not use `any`. Use `unknown` and narrow.
+- Colocate types next to the feature that owns them.
+- Import with the `@/` alias (`@/lib/supabase/server`).
+
+## Next.js App Router
+
+- Default to Server Components. Add `"use client"` only for event handlers, browser APIs, or client-only libraries.
+- Keep data fetching in Server Components or Server Actions. Do not fetch from the client when the server can do it.
+- Put Server Actions in dedicated files or at the bottom of a server module. Mark them with `"use server"`.
+- Route files live under `app/`. Shared UI lives under `components/`. Shared helpers live under `lib/`.
+- Do not import `lib/supabase/server.ts` into Client Components.
+- Do not import `lib/supabase/client.ts` into Server Components, Route Handlers, or Server Actions.
+
+## Supabase SSR
+
+- Browser / Client Components: `import { createClient } from "@/lib/supabase/client"` then `createClient()`.
+- Server Components, Server Actions, Route Handlers: `import { createClient } from "@/lib/supabase/server"` then `await createClient()`.
+- Always create a new client per request on the server. Do not cache the server client as a module singleton.
+- Use the anon/publishable key from `NEXT_PUBLIC_SUPABASE_*` env vars. Never put the service role key in client code or `NEXT_PUBLIC_*`.
+- Cookie writes from Server Components may no-op; session refresh belongs in middleware when auth is added.
+
+## Tailwind CSS
+
+- Style with Tailwind utility classes. Avoid new CSS modules unless a third-party widget requires them.
+- Merge conditional class names with `cn()` from `@/lib/utils`.
+- Icons come from `lucide-react`.
+
+## UI and product
+
+- Korean UI copy unless a file already uses English.
+- Keep layouts readable on mobile first; meetup voting happens on phones.
+- Prefer small, focused components over large page files.
+
+## Examples
+
+```ts
+// ✅ Client Component
+"use client";
+import { createClient } from "@/lib/supabase/client";
+const supabase = createClient();
+
+// ✅ Server Component / Server Action
+import { createClient } from "@/lib/supabase/server";
+const supabase = await createClient();
+
+// ❌ Do not create a global supabase singleton for the server
+export const supabase = createClient();
+```
