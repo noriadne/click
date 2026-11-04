@@ -1,42 +1,49 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/components/user-provider";
-import { getSelectableRange } from "@/lib/dates";
+import {
+  getSelectableRange,
+  isSelectableDate,
+  TIME_OPTIONS,
+  toSeoulIso,
+} from "@/lib/dates";
 import type { Game } from "@/lib/types";
 
-/** 선택 가능한 날짜의 30분 단위 시간 옵션 생성 */
-function buildTimeOptions(): { value: string; label: string }[] {
-  const options = [];
-  for (let h = 0; h < 24; h++) {
-    for (const m of [0, 30]) {
-      const hh = h.toString().padStart(2, "0");
-      const mm = m.toString().padStart(2, "0");
-      const period = h < 12 ? "오전" : "오후";
-      const displayHour = h % 12 === 0 ? 12 : h % 12;
-      options.push({
-        value: `${hh}:${mm}`,
-        label: `${period} ${displayHour}:${mm}`,
-      });
-    }
-  }
-  return options;
-}
-
-const TIME_OPTIONS = buildTimeOptions();
-
-export default function CreateForm({
-  defaultDate,
-  today,
-  games,
-}: {
+type CreateFormProps = {
   defaultDate: string;
   today: string;
   games: Game[];
-}) {
+};
+
+/**
+ * Cache Components 는 이전 페이지를 숨겨서 보존(Activity)하기 때문에, 이전에 열었던
+ * 생성 폼의 입력값(날짜 등)이 남아 있을 수 있다. 링크/push 로 새로 진입할 때마다
+ * bfcacheId 가 바뀌므로 key 로 써서 폼을 초기화한다. (뒤로가기는 입력 상태 그대로 복원)
+ */
+export default function CreateForm(props: CreateFormProps) {
+  const { bfcacheId } = useRouter();
+  // 보존된(숨겨진) 폼이 서버에서 받은 이전 props 를 들고 있을 수 있으므로,
+  // 날짜는 현재 주소(?date=)에서 직접 읽고, 날짜가 바뀌면 폼을 새로 만든다.
+  const dateParam = useSearchParams().get("date");
+  const defaultDate =
+    dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
+      ? dateParam
+      : props.defaultDate;
+
+  return (
+    <CreateFormInner
+      key={`${bfcacheId}:${defaultDate}`}
+      {...props}
+      defaultDate={defaultDate}
+    />
+  );
+}
+
+function CreateFormInner({ defaultDate, today, games }: CreateFormProps) {
   const router = useRouter();
   const { user, ready } = useUser();
   const [isPending, startTransition] = useTransition();
@@ -74,13 +81,17 @@ export default function CreateForm({
       setError("모든 필드를 입력해주세요.");
       return;
     }
+    if (!isSelectableDate(date, range)) {
+      setError(`날짜는 ${range.min} ~ ${range.max} 사이로만 선택할 수 있습니다.`);
+      return;
+    }
     if (!Number.isFinite(maxParticipants) || maxParticipants < 2) {
       setError("정원은 2명 이상이어야 합니다.");
       return;
     }
 
-    // 날짜 + 시간 → ISO timestamp (로컬 시간 기준)
-    const eventTime = `${date}T${time}:00`;
+    // 날짜 + 시간 → 서울 시간대(+09:00) timestamptz
+    const eventTime = toSeoulIso(date, time);
 
     setError(null);
     startTransition(async () => {
@@ -104,7 +115,7 @@ export default function CreateForm({
         return;
       }
 
-      // 2. 방장을 첫 참석자로 등록
+      // 2. 룰마(생성자)를 첫 참석자로 등록
       const { error: pError } = await supabase
         .from("event_participants")
         .insert({ event_id: event.id, user_id: user.id });
@@ -157,7 +168,7 @@ export default function CreateForm({
           <select
             id="time"
             name="time"
-            defaultValue="18:00"
+            defaultValue="19:00"
             required
             className={fieldClass}
           >

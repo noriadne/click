@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   addDays,
@@ -23,23 +22,43 @@ const WEEK_HEADERS = ["월", "화", "수", "목", "금", "토", "일"];
 export default function Calendar({
   selectedDate,
   today,
+  viewMode,
+  onViewModeChange,
+  onSelect,
 }: {
   selectedDate: string;
   today: string;
+  viewMode: CalendarViewMode;
+  onViewModeChange: (mode: CalendarViewMode) => void;
+  onSelect: (date: string) => void;
 }) {
-  const router = useRouter();
   const range = getSelectableRange(today);
 
-  const [viewMode, setViewMode] = useState<CalendarViewMode>("week");
   const [viewStart, setViewStart] = useState(() =>
-    startOfWeekMonday(selectedDate),
+    viewMode === "week" ? startOfWeekMonday(selectedDate) : startOfMonth(selectedDate),
   );
 
+  const viewFor = (mode: CalendarViewMode, date: string) =>
+    mode === "week" ? startOfWeekMonday(date) : startOfMonth(date);
+
+  const days =
+    viewMode === "week" ? daysInWeek(viewStart) : daysInMonthGrid(viewStart);
+
+  // 스크롤 연동 등으로 선택 날짜가 바뀌어 현재 보이는 범위를 벗어나면 달력도 따라간다.
+  // (렌더 중 상태 조정 패턴)
+  const [prevSelected, setPrevSelected] = useState(selectedDate);
+  if (prevSelected !== selectedDate) {
+    setPrevSelected(selectedDate);
+    const visible =
+      viewMode === "week"
+        ? daysInWeek(viewStart).includes(selectedDate)
+        : isSameMonth(selectedDate, viewStart);
+    if (!visible) setViewStart(viewFor(viewMode, selectedDate));
+  }
+
   const handleViewModeChange = (mode: CalendarViewMode) => {
-    setViewMode(mode);
-    setViewStart(
-      mode === "week" ? startOfWeekMonday(selectedDate) : startOfMonth(selectedDate),
-    );
+    onViewModeChange(mode);
+    setViewStart(viewFor(mode, selectedDate));
   };
 
   const handlePrev = () =>
@@ -52,14 +71,6 @@ export default function Calendar({
       viewMode === "week" ? addDays(prev, 7) : addMonths(prev, 1),
     );
 
-  const handleDateClick = (date: string) => {
-    if (!isSelectableDate(date, range)) return;
-    router.push(`/?date=${date}`);
-  };
-
-  const days =
-    viewMode === "week" ? daysInWeek(viewStart) : daysInMonthGrid(viewStart);
-
   return (
     <div className="rounded-2xl border border-zinc-700 bg-zinc-900 p-4">
       {/* 상단 컨트롤 */}
@@ -67,6 +78,7 @@ export default function Calendar({
         <div className="flex items-center gap-1">
           <button
             onClick={handlePrev}
+            aria-label="이전"
             className="rounded-lg p-1.5 text-zinc-400 transition hover:bg-zinc-800"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -76,6 +88,7 @@ export default function Calendar({
           </span>
           <button
             onClick={handleNext}
+            aria-label="다음"
             className="rounded-lg p-1.5 text-zinc-400 transition hover:bg-zinc-800"
           >
             <ChevronRight className="h-4 w-4" />
@@ -125,20 +138,18 @@ export default function Calendar({
           return (
             <button
               key={date}
-              onClick={() => handleDateClick(date)}
+              onClick={() => selectable && onSelect(date)}
               disabled={!selectable}
+              aria-label={`${date}${isToday ? " 오늘" : ""}`}
+              aria-pressed={isSelected}
               className={cn(
-                "flex aspect-square items-center justify-center rounded-lg text-sm transition",
-                // 선택된 날짜
+                "flex items-center justify-center rounded-lg text-sm transition",
+                // 주간 보기는 한 줄이라 높이를 줄여 고정(sticky) 시 공간을 덜 차지한다.
+                viewMode === "week" ? "h-10" : "aspect-square",
                 isSelected && "bg-indigo-500 font-bold text-white",
-                // 선택 가능 + 미선택
-                selectable && !isSelected &&
-                  "text-zinc-200 hover:bg-zinc-700",
-                // 선택 불가
+                selectable && !isSelected && "text-zinc-200 hover:bg-zinc-700",
                 !selectable && "cursor-not-allowed text-zinc-600",
-                // 월간 뷰에서 다른 달 날짜
                 viewMode === "month" && !inMonth && !isSelected && "opacity-30",
-                // 오늘 표시 (미선택일 때만 링 표시)
                 isToday && !isSelected && "ring-2 ring-indigo-400",
               )}
             >

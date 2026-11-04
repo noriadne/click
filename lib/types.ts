@@ -1,6 +1,11 @@
+export type UserStatus = "pending" | "approved" | "rejected";
+export type UserRole = "user" | "admin";
+
 export type User = {
   id: string;
   nickname: string;
+  status: UserStatus;
+  role: UserRole;
   created_at: string;
 };
 
@@ -31,9 +36,13 @@ export type EventParticipant = {
   created_at: string;
 };
 
+export type ParticipantWithUser = EventParticipant & {
+  users: Pick<User, "nickname"> | null;
+};
+
 export type EventWithDetails = MeetupEvent & {
   games: Game | null;
-  event_participants: EventParticipant[];
+  event_participants: ParticipantWithUser[];
 };
 
 export type CalendarViewMode = "week" | "month";

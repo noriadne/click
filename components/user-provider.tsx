@@ -5,100 +5,131 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import { createClient } from "@/lib/supabase/client";
+import type { User } from "@/lib/types";
 
-type CurrentUser = { id: string; nickname: string } | null;
+type ApprovedUser = { id: string; nickname: string };
 
 type UserContextValue = {
-  user: CurrentUser;
+  /** 승인(approved)된 유저만 값이 있다. 기존 화면 호환용. */
+  user: ApprovedUser | null;
+  /** users 테이블 행 (가입 요청 전이면 null) */
+  profile: User | null;
+  /** 카카오 로그인 세션 존재 여부 */
+  authed: boolean;
+  isAdmin: boolean;
   ready: boolean;
-  registerNickname: (nickname: string) => Promise<{ error?: string }>;
-  logout: () => void;
+  signInWithKakao: () => Promise<{ error?: string }>;
+  signOut: () => Promise<void>;
+  requestSignup: (nickname: string) => Promise<{ error?: string }>;
+  reload: () => Promise<void>;
 };
 
 const UserContext = createContext<UserContextValue>({
   user: null,
+  profile: null,
+  authed: false,
+  isAdmin: false,
   ready: false,
-  registerNickname: async () => ({}),
-  logout: () => {},
+  signInWithKakao: async () => ({}),
+  signOut: async () => {},
+  requestSignup: async () => ({}),
+  reload: async () => {},
 });
 
-const STORAGE_KEY = "boardgame_user_nickname";
-
 export function UserProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<CurrentUser>(null);
+  const supabase = useMemo(() => createClient(), []);
+  const [authed, setAuthed] = useState(false);
+  const [profile, setProfile] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
 
-  // 마운트 시 localStorage 닉네임 → Supabase 유저 조회
-  useEffect(() => {
-    const nickname = localStorage.getItem(STORAGE_KEY);
-    if (!nickname) {
+  const load = useCallback(async () => {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) {
+      setAuthed(false);
+      setProfile(null);
       setReady(true);
       return;
     }
 
-    const supabase = createClient();
-    supabase
+    setAuthed(true);
+    const { data: row } = await supabase
       .from("users")
       .select("*")
-      .eq("nickname", nickname)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) {
-          setUser(data);
-        } else {
-          // DB에 없는 닉네임이면 localStorage 정리
-          localStorage.removeItem(STORAGE_KEY);
-        }
-        setReady(true);
-      });
-  }, []);
+      .eq("id", data.user.id)
+      .maybeSingle();
+    setProfile((row as User | null) ?? null);
+    setReady(true);
+  }, [supabase]);
 
-  const registerNickname = useCallback(
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load();
+
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      // 콜백 안에서 바로 supabase 호출을 await 하면 교착될 수 있어 지연 실행
+      setTimeout(() => void load(), 0);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [supabase, load]);
+
+  const signInWithKakao = useCallback(async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "kakao",
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+    return error ? { error: error.message } : {};
+  }, [supabase]);
+
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
+    // 서버 컴포넌트 데이터도 초기화되도록 전체 새로고침
+    window.location.href = "/";
+  }, [supabase]);
+
+  const requestSignup = useCallback(
     async (nickname: string): Promise<{ error?: string }> => {
       const trimmed = nickname.trim();
       if (!trimmed) return { error: "닉네임을 입력해주세요." };
+      if (trimmed.length > 20) return { error: "닉네임은 20자 이하여야 합니다." };
 
-      const supabase = createClient();
-
-      // 기존 유저 조회
-      const { data: existing } = await supabase
-        .from("users")
-        .select("*")
-        .eq("nickname", trimmed)
-        .maybeSingle();
-
-      if (existing) {
-        localStorage.setItem(STORAGE_KEY, trimmed);
-        setUser(existing);
-        return {};
+      const { error } = await supabase.rpc("request_signup", {
+        p_nickname: trimmed,
+      });
+      if (error) {
+        if (error.code === "23505") {
+          return { error: "이미 사용 중인 닉네임입니다." };
+        }
+        return { error: `가입 요청에 실패했습니다. (${error.message})` };
       }
-
-      // 신규 유저 생성
-      const { data: created, error } = await supabase
-        .from("users")
-        .insert({ nickname: trimmed })
-        .select()
-        .single();
-
-      if (error || !created) return { error: "유저 생성에 실패했습니다." };
-
-      localStorage.setItem(STORAGE_KEY, trimmed);
-      setUser(created);
+      await load();
       return {};
     },
-    [],
+    [supabase, load],
   );
 
-  const logout = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
-    setUser(null);
-  }, []);
+  const user: ApprovedUser | null =
+    profile && profile.status === "approved"
+      ? { id: profile.id, nickname: profile.nickname }
+      : null;
 
   return (
-    <UserContext.Provider value={{ user, ready, registerNickname, logout }}>
+    <UserContext.Provider
+      value={{
+        user,
+        profile,
+        authed,
+        isAdmin: profile?.status === "approved" && profile.role === "admin",
+        ready,
+        signInWithKakao,
+        signOut,
+        requestSignup,
+        reload: load,
+      }}
+    >
       {children}
     </UserContext.Provider>
   );
