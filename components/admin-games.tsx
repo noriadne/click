@@ -81,8 +81,8 @@ export default function AdminGames() {
       setError("최소 인원이 최대 인원보다 클 수 없습니다.");
       return;
     }
-    if (weight !== null && (!Number.isFinite(weight) || weight < 0 || weight > 5)) {
-      setError("웨이트는 0~5 사이로 입력해주세요.");
+    if (weight !== null && (!Number.isFinite(weight) || weight < 1 || weight > 5)) {
+      setError("웨이트는 1~5 사이로 입력해주세요. (비워두면 표시하지 않습니다)");
       return;
     }
 
@@ -171,13 +171,13 @@ export default function AdminGames() {
 
           <div>
             <label className={labelClass} htmlFor="game-weight">
-              웨이트 (선택, 0~5)
+              웨이트 (선택, 1~5)
             </label>
             <input
               id="game-weight"
               name="geek_weight"
               type="number"
-              min={0}
+              min={1}
               max={5}
               step={0.01}
               placeholder="비워두면 모임 카드에 표시하지 않습니다"

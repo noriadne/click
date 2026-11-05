@@ -22,19 +22,31 @@ delete from users;
 -- ---------------------------------------------------------------------
 -- 1. users 테이블 확장
 --    id = auth.users.id (카카오 로그인 시 Supabase 가 발급한 유저 ID)
+--
+--    000_schema.sql 을 먼저 실행한 새 DB 에서는 status/role 컬럼이 이미 있고
+--    id 에 기본값도 없으므로, 아래는 모두 "없을 때만" 적용되도록 작성한다.
+--    (기존 DB 에서도 동일하게 안전)
 -- ---------------------------------------------------------------------
 alter table users alter column id drop default;
 
-alter table users
-  add constraint users_id_fkey
-  foreign key (id) references auth.users (id) on delete cascade;
+-- auth.users 참조 FK (없을 때만 추가)
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'users_id_fkey'
+  ) then
+    alter table users
+      add constraint users_id_fkey
+      foreign key (id) references auth.users (id) on delete cascade;
+  end if;
+end $$;
 
 alter table users
-  add column status text not null default 'pending'
+  add column if not exists status text not null default 'pending'
     check (status in ('pending', 'approved', 'rejected'));
 
 alter table users
-  add column role text not null default 'user'
+  add column if not exists role text not null default 'user'
     check (role in ('user', 'admin'));
 
 -- 닉네임 중복 방지 (대소문자 무시)
