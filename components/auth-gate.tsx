@@ -10,7 +10,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <div className="w-full max-w-sm space-y-5 rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
         <div className="flex items-center justify-center gap-2">
           <Dice5 className="h-6 w-6 text-indigo-500" />
-          <span className="text-lg font-bold tracking-tight">보드게임 모임</span>
+          <span className="text-lg font-bold tracking-tight">Click 모임일정</span>
         </div>
         {children}
       </div>
