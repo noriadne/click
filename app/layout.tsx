@@ -14,8 +14,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// 개발 서버(npm run dev)와 Vercel Preview 는 탭 제목에 [DEV] 를 붙여
+// 운영(Production) 배포와 혼동하지 않도록 한다.
+const isDev =
+  process.env.NODE_ENV === "development" ||
+  process.env.VERCEL_ENV === "preview";
+
 export const metadata: Metadata = {
-  title: "보드게임 모임 캘린더",
+  title: isDev ? "[DEV] 보드게임 모임 캘린더" : "보드게임 모임 캘린더",
   description: "보드게임 모임 일정을 관리하는 캘린더 앱",
 };
 

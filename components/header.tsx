@@ -14,6 +14,11 @@ export default function Header() {
         <Link href="/" className="flex items-center gap-2">
           <Dice5 className="h-6 w-6 text-indigo-500" />
           <span className="text-lg font-bold tracking-tight">보드게임 모임</span>
+          {process.env.NODE_ENV === "development" && (
+            <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[11px] font-semibold text-amber-400">
+              DEV
+            </span>
+          )}
         </Link>
 
         {ready && profile && (
