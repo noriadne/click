@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 const TABS = [
   { href: "/admin", label: "유저 관리" },
   { href: "/admin/games", label: "게임 관리" },
+  { href: "/admin/share", label: "일정 공유" },
 ];
 
 /** 관리자 화면 상단 탭 */
