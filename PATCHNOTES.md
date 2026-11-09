@@ -35,9 +35,13 @@
   - 관리자 일정 공유 텍스트는 변경 없음.
 - 이유: 게임이 선택 항목이 되면서 목록에서 모임 성격을 빠르게 구분할 필요가 커져서.
 - 적용 방법: 없음(코드만 변경, DB·환경변수 변경 없음).
+- 배포/운영 메모 (v1.01~v1.03 운영 반영 시 확인된 사항):
+  - 배포 흐름: `dev`에 푸시 → Vercel Preview로 확인 → `dev`를 `main`에 머지·푸시 → 운영 배포.
+  - Vercel Preview도 운영 DB를 씀(환경변수가 Production and Preview로 등록됨). 프리뷰에서 만든 데이터는 운영 데이터로 남음.
+  - 프리뷰 로그인: 운영 Supabase의 Auth Redirect URLs에 dev 브랜치 주소 `https://click-git-dev-click-363b.vercel.app/auth/callback`을 등록함. 프리뷰는 반드시 이 브랜치 주소로 접속해서 로그인할 것. 배포마다 바뀌는 주소(`click-<해시>-click-363b.vercel.app`)로 로그인하면 허용 목록에 없어서 운영 주소로 넘어가고, 예전 코드(운영)를 보게 됨. 넓은 와일드카드는 다른 프로젝트 주소까지 허용되므로 쓰지 않음.
 - 영향 범위: 코드(`lib/categories.ts`, `components/event-card.tsx`).
 - 검증 상태: `npm run build`, `npm run lint` 통과, 색 클래스가 빌드 CSS에 포함된 것 확인. 실제 화면 모양은 확인하지 못함.
-- 관련 커밋: (푸시 후 기입)
+- 관련 커밋: `eb39ba9` (`dev`)
 
 ---
 
