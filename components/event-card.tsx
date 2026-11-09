@@ -16,6 +16,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/components/user-provider";
 import type { EventWithDetails } from "@/lib/types";
+import { CATEGORY_BADGE_CLASS } from "@/lib/categories";
 import { formatSeoulTime, splitSeoulDateTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
@@ -177,10 +178,16 @@ export default function EventCard({
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <span className="mb-1 inline-block rounded-full bg-indigo-500/15 px-2 py-0.5 text-[11px] font-medium text-indigo-300">
-            {event.category}
-          </span>
           <h3 className="text-base font-semibold leading-snug text-zinc-100">
+            {/* 카테고리는 제목 앞에 색으로 구분해 붙인다. 색만으로 구분하지 않도록 이름도 함께 표시한다. */}
+            <span
+              className={cn(
+                "mr-1.5 inline-block rounded-md px-1.5 py-0.5 align-middle text-[11px] font-medium leading-none",
+                CATEGORY_BADGE_CLASS[event.category] ?? "bg-zinc-800 text-zinc-300",
+              )}
+            >
+              {event.category}
+            </span>
             {event.title}
           </h3>
           {isCreator && (

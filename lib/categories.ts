@@ -15,6 +15,20 @@ export const EVENT_CATEGORIES = [
 
 export type EventCategory = (typeof EVENT_CATEGORIES)[number];
 
+/**
+ * 모임 카드에서 제목 앞에 붙는 카테고리 배지 색.
+ * Tailwind 가 클래스를 찾을 수 있도록 클래스 문자열을 조합하지 않고 통째로 적는다.
+ * 노란색(amber)은 룰마 왕관 표시에, 남색(indigo)은 버튼에 쓰이므로 피한다.
+ */
+export const CATEGORY_BADGE_CLASS: Record<EventCategory, string> = {
+  자유: "bg-zinc-700/60 text-zinc-200",
+  "전략(초급)": "bg-emerald-500/15 text-emerald-300",
+  "전략(상급)": "bg-orange-500/15 text-orange-300",
+  파티: "bg-fuchsia-500/15 text-fuchsia-300",
+  캠페인: "bg-violet-500/15 text-violet-300",
+  기타: "bg-sky-500/15 text-sky-300",
+};
+
 export function isEventCategory(value: unknown): value is EventCategory {
   return (
     typeof value === "string" &&
