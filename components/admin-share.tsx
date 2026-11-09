@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, Copy } from "lucide-react";
 import { useUser } from "@/components/user-provider";
 import { formatKoreanDate, formatSeoulTime, listDates } from "@/lib/dates";
+import { categoryLabel } from "@/lib/categories";
 import type { EventWithDetails } from "@/lib/types";
 
 /** 날짜, 제목, 시간, 카테고리, 게임명(있을 때), 참석 인원으로 공유용 텍스트를 만든다. */
@@ -26,7 +27,7 @@ function buildShareText(
         const time = formatSeoulTime(event.event_time);
         const count = event.event_participants.length;
         // 보드게임은 선택 항목이라 정해진 경우에만 표시한다.
-        const parts = [time, event.category];
+        const parts = [time, categoryLabel(event.category)];
         if (event.games?.title) parts.push(event.games.title);
         parts.push(`${count}/${event.max_participants}명`);
         lines.push(`🎲 ${event.title}`);

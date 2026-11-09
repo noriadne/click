@@ -12,6 +12,7 @@ import {
   TIME_OPTIONS,
   toSeoulIso,
 } from "@/lib/dates";
+import { categoryLabel } from "@/lib/categories";
 import type { EventWithDetails, Game } from "@/lib/types";
 
 type EditFormProps = {
@@ -208,7 +209,7 @@ function EditFormInner({ event, games, today }: EditFormProps) {
           <input
             id="category"
             type="text"
-            value={event.category}
+            value={categoryLabel(event.category)}
             readOnly
             disabled
             className={`${fieldClass} cursor-not-allowed opacity-60`}

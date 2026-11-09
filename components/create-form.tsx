@@ -11,14 +11,19 @@ import {
   TIME_OPTIONS,
   toSeoulIso,
 } from "@/lib/dates";
-import { EVENT_CATEGORIES, isEventCategory } from "@/lib/categories";
+import {
+  CAMPAIGN_CATEGORY,
+  categoryLabel,
+  EVENT_CATEGORIES,
+  isEventCategory,
+} from "@/lib/categories";
 import ParticipantPicker, {
   type PickerMember,
 } from "@/components/participant-picker";
 import type { Game } from "@/lib/types";
 
-/** 룰마가 참석자를 직접 지정할 수 있는 카테고리 */
-const ROSTER_CATEGORY = "캠페인";
+/** 룰마가 참석자를 직접 지정할 수 있는 카테고리 (저장값) */
+const ROSTER_CATEGORY = CAMPAIGN_CATEGORY;
 
 type CreateFormProps = {
   defaultDate: string;
@@ -274,7 +279,7 @@ function CreateFormInner({
             <option value="" disabled>카테고리 선택</option>
             {EVENT_CATEGORIES.map((category) => (
               <option key={category} value={category}>
-                {category}
+                {categoryLabel(category)}
               </option>
             ))}
           </select>

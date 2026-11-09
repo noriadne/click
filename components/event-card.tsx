@@ -16,7 +16,11 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/components/user-provider";
 import type { EventWithDetails } from "@/lib/types";
-import { CATEGORY_BADGE_CLASS } from "@/lib/categories";
+import {
+  CAMPAIGN_CATEGORY,
+  CATEGORY_BADGE_CLASS,
+  categoryLabel,
+} from "@/lib/categories";
 import { formatSeoulTime, splitSeoulDateTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
@@ -55,7 +59,7 @@ export default function EventCard({
   const isCreator = !!user && user.id === event.creator_id;
   // 캠페인은 룰마가 생성할 때 지정한 사람만 참석한다. 본인 참석 버튼은 숨기고
   // (DB 정책 007 도 막는다), 이미 참석한 사람의 참석 취소만 허용한다.
-  const isCampaign = event.category === "캠페인";
+  const isCampaign = event.category === CAMPAIGN_CATEGORY;
   const canSelfJoin = !isCampaign;
   const showToggle = isJoined || canSelfJoin;
   // 모임 날짜가 오늘보다 과거면 종료된 모임 (같은 날의 지난 시간은 허용)
@@ -186,7 +190,7 @@ export default function EventCard({
                 CATEGORY_BADGE_CLASS[event.category] ?? "bg-zinc-800 text-zinc-300",
               )}
             >
-              {event.category}
+              {categoryLabel(event.category)}
             </span>
             {event.title}
           </h3>
@@ -274,7 +278,7 @@ export default function EventCard({
           <p className="flex flex-1 items-center rounded-xl border border-dashed border-zinc-800 px-3 py-2 text-xs text-zinc-500">
             {isPastDate
               ? "종료된 모임"
-              : "캠페인은 룰마가 지정한 멤버만 참석해요"}
+              : `${categoryLabel(CAMPAIGN_CATEGORY)} 모임은 룰마가 지정한 멤버만 참석해요`}
           </p>
         )}
         {showToggle && (
