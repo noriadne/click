@@ -1,3 +1,5 @@
+import type { EventCategory } from "@/lib/categories";
+
 export type UserStatus = "pending" | "approved" | "rejected";
 export type UserRole = "user" | "admin";
 
@@ -25,7 +27,8 @@ export type MeetupEvent = {
   event_time: string; // ISO timestamp
   max_participants: number;
   creator_id: string;
-  game_id: string;
+  category: EventCategory;
+  game_id: string | null; // 선택값
   created_at: string;
 };
 

@@ -52,6 +52,11 @@ export default function EventCard({
     : false;
   const isFull = participantCount >= event.max_participants;
   const isCreator = !!user && user.id === event.creator_id;
+  // 캠페인은 룰마가 생성할 때 지정한 사람만 참석한다. 본인 참석 버튼은 숨기고
+  // (DB 정책 007 도 막는다), 이미 참석한 사람의 참석 취소만 허용한다.
+  const isCampaign = event.category === "캠페인";
+  const canSelfJoin = !isCampaign;
+  const showToggle = isJoined || canSelfJoin;
   // 모임 날짜가 오늘보다 과거면 종료된 모임 (같은 날의 지난 시간은 허용)
   const isPastDate = splitSeoulDateTime(event.event_time).date < today;
 
@@ -62,6 +67,7 @@ export default function EventCard({
   const handleToggle = () => {
     if (!user || isPastDate) return;
     if (isSoleHost) return;
+    if (!isJoined && !canSelfJoin) return;
     if (isCreator && isJoined && nextHost) {
       const name = nextHost.users?.nickname ?? "다음 참석자";
       if (!window.confirm(`참석을 취소하면 룰마가 ${name}님에게 넘어갑니다. 계속할까요?`)) {
@@ -171,6 +177,9 @@ export default function EventCard({
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className="min-w-0">
+          <span className="mb-1 inline-block rounded-full bg-indigo-500/15 px-2 py-0.5 text-[11px] font-medium text-indigo-300">
+            {event.category}
+          </span>
           <h3 className="text-base font-semibold leading-snug text-zinc-100">
             {event.title}
           </h3>
@@ -254,6 +263,14 @@ export default function EventCard({
       )}
 
       <div className="flex gap-2">
+        {!showToggle && (
+          <p className="flex flex-1 items-center rounded-xl border border-dashed border-zinc-800 px-3 py-2 text-xs text-zinc-500">
+            {isPastDate
+              ? "종료된 모임"
+              : "캠페인은 룰마가 지정한 멤버만 참석해요"}
+          </p>
+        )}
+        {showToggle && (
         <button
           onClick={handleToggle}
           disabled={
@@ -284,6 +301,7 @@ export default function EventCard({
                     ? "정원 가득"
                     : "참석하기"}
         </button>
+        )}
 
         {isCreator && !isPastDate && (
           <>

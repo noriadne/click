@@ -91,7 +91,7 @@ function SignupCard({ rejected }: { rejected: boolean }) {
         <div className="flex items-start gap-2 rounded-lg bg-red-950 px-3 py-2 text-xs text-red-300">
           <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            현재 이용이 승인되지 않은 상태입니다. 오픈톡방에서 쓰는 이름을
+            현재 이용이 승인되지 않은 상태입니다. 오픈톡방에서 쓰는 닉네임을
             확인하고 다시 가입 요청을 보내거나, 관리자에게 문의해 주세요.
           </p>
         </div>
@@ -99,7 +99,7 @@ function SignupCard({ rejected }: { rejected: boolean }) {
         <p className="text-center text-sm text-zinc-400">
           가입 요청을 보내면 관리자가 확인 후 승인합니다.
           <br />
-          오픈톡방에서 쓰는 이름을 입력해 주세요.
+          오픈톡방에서 쓰는 닉네임을 입력해 주세요.
         </p>
       )}
       <form onSubmit={handleSubmit} className="space-y-3">
@@ -117,7 +117,7 @@ function SignupCard({ rejected }: { rejected: boolean }) {
             maxLength={20}
             required
             autoComplete="off"
-            placeholder="오픈톡방 이름"
+            placeholder="오픈톡방 닉네임"
             className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-900"
           />
         </div>

@@ -7,7 +7,7 @@ import { useUser } from "@/components/user-provider";
 import { formatKoreanDate, formatSeoulTime, listDates } from "@/lib/dates";
 import type { EventWithDetails } from "@/lib/types";
 
-/** 날짜, 제목, 시간, 게임명, 참석 인원으로 공유용 텍스트를 만든다. */
+/** 날짜, 제목, 시간, 카테고리, 게임명(있을 때), 참석 인원으로 공유용 텍스트를 만든다. */
 function buildShareText(
   today: string,
   range: { min: string; max: string },
@@ -24,10 +24,13 @@ function buildShareText(
     } else {
       for (const event of events) {
         const time = formatSeoulTime(event.event_time);
-        const game = event.games?.title ?? "게임 미정";
         const count = event.event_participants.length;
+        // 보드게임은 선택 항목이라 정해진 경우에만 표시한다.
+        const parts = [time, event.category];
+        if (event.games?.title) parts.push(event.games.title);
+        parts.push(`${count}/${event.max_participants}명`);
         lines.push(`🎲 ${event.title}`);
-        lines.push(`${time} · ${game} · ${count}/${event.max_participants}명`);
+        lines.push(parts.join(" · "));
       }
     }
     lines.push("");

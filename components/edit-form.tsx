@@ -82,10 +82,11 @@ function EditFormInner({ event, games, today }: EditFormProps) {
     const date = fd.get("date") as string;
     const time = fd.get("time") as string;
     const maxParticipants = Number(fd.get("max_participants"));
-    const gameId = fd.get("game_id") as string;
+    // 보드게임은 선택 항목: 선택하지 않으면 null
+    const gameId = (fd.get("game_id") as string) || null;
 
-    if (!date || !time || !gameId) {
-      setError("모든 필드를 입력해주세요.");
+    if (!date || !time) {
+      setError("필수 항목을 모두 입력해주세요.");
       return;
     }
     if (!isSelectableDate(date, range)) {
@@ -199,6 +200,21 @@ function EditFormInner({ event, games, today }: EditFormProps) {
           </select>
         </div>
 
+        {/* 카테고리 (수정 불가: 캠페인 권한 등이 카테고리에 연결되어 있다) */}
+        <div>
+          <label className={labelClass} htmlFor="category">
+            카테고리 (수정 불가)
+          </label>
+          <input
+            id="category"
+            type="text"
+            value={event.category}
+            readOnly
+            disabled
+            className={`${fieldClass} cursor-not-allowed opacity-60`}
+          />
+        </div>
+
         {/* 최대 정원 */}
         <div>
           <label className={labelClass} htmlFor="max_participants">
@@ -216,16 +232,16 @@ function EditFormInner({ event, games, today }: EditFormProps) {
           />
         </div>
 
-        {/* 보드게임 */}
+        {/* 보드게임 (선택 항목) */}
         <div>
-          <label className={labelClass} htmlFor="game_id">보드게임</label>
+          <label className={labelClass} htmlFor="game_id">보드게임 (선택)</label>
           <select
             id="game_id"
             name="game_id"
-            defaultValue={event.game_id}
-            required
+            defaultValue={event.game_id ?? ""}
             className={fieldClass}
           >
+            <option value="">선택 안 함</option>
             {games.map((game) => (
               <option key={game.id} value={game.id}>
                 {game.title}

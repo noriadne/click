@@ -6,8 +6,10 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@/lib/types";
 
@@ -115,6 +117,23 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     profile && profile.status === "approved"
       ? { id: profile.id, nickname: profile.nickname }
       : null;
+
+  // 서버 컴포넌트(모임 목록 등)는 "요청 당시"의 권한으로 그려진다.
+  // 승인 대기 중에 그려진 화면은 RLS 때문에 비어 있으므로, 화면을 연 채로
+  // 승인되거나(또는 승인이 풀리거나 다른 계정으로 바뀌면) 서버 데이터를 다시 받아온다.
+  // 첫 판정은 서버 렌더링과 같은 세션 기준이므로 새로고침하지 않는다.
+  const router = useRouter();
+  const approvedUserId = ready ? (user?.id ?? null) : undefined;
+  const lastApprovedUserId = useRef<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    if (approvedUserId === undefined) return; // 아직 판정 전
+    const previous = lastApprovedUserId.current;
+    lastApprovedUserId.current = approvedUserId;
+    if (previous !== undefined && previous !== approvedUserId) {
+      router.refresh();
+    }
+  }, [approvedUserId, router]);
 
   return (
     <UserContext.Provider
