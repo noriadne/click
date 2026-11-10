@@ -1,8 +1,11 @@
 @import "tailwindcss";
 
+/* 이 앱은 다크 테마 전용이다. 시스템 설정과 무관하게 항상 같은 배경을 쓴다.
+   (카카오톡 인앱 브라우저 등 prefers-color-scheme 처리가 다른 환경에서
+   라이트 배경이 보이는 문제가 있어 조건부 다크모드를 제거함) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 @theme inline {
@@ -10,13 +13,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {

@@ -32,7 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body
         suppressHydrationWarning
-        className="min-h-full flex flex-col bg-zinc-50 dark:bg-zinc-950"
+        className="min-h-full flex flex-col bg-zinc-950"
       >
         <UserProvider>
           <AuthGate>{children}</AuthGate>
