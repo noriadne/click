@@ -12,12 +12,17 @@ import {
   TIME_OPTIONS,
   toSeoulIso,
 } from "@/lib/dates";
-import { categoryLabel } from "@/lib/categories";
+import { CAMPAIGN_CATEGORY, categoryLabel } from "@/lib/categories";
+import ParticipantPicker, {
+  type PickerMember,
+} from "@/components/participant-picker";
 import type { EventWithDetails, Game } from "@/lib/types";
 
 type EditFormProps = {
   event: EventWithDetails;
   games: Game[];
+  /** 캠페인 참석자 지정 후보 (승인된 유저) */
+  members: PickerMember[];
   today: string;
 };
 
@@ -27,13 +32,21 @@ export default function EditForm(props: EditFormProps) {
   return <EditFormInner key={bfcacheId} {...props} />;
 }
 
-function EditFormInner({ event, games, today }: EditFormProps) {
+function EditFormInner({ event, games, members, today }: EditFormProps) {
   const router = useRouter();
   const { user, ready } = useUser();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   const isCreator = !!user && user.id === event.creator_id;
+  const isCampaign = event.category === CAMPAIGN_CATEGORY;
+
+  // 캠페인 참석자 지정: 룰마 본인을 제외한 현재 참석자로 초기화
+  const initialRosterIds = event.event_participants
+    .map((p) => p.user_id)
+    .filter((id) => id !== event.creator_id);
+  const [rosterIds, setRosterIds] = useState<string[]>(initialRosterIds);
+  const [maxInput, setMaxInput] = useState(String(event.max_participants));
 
   // 로그인 안 했거나 룰마가 아니면 메인으로
   useEffect(() => {
@@ -58,6 +71,9 @@ function EditFormInner({ event, games, today }: EditFormProps) {
 
   // 오늘 ~ 다음 주 일요일까지만 변경 가능
   const range = getSelectableRange(today);
+  // 지정 후보에서 룰마 본인은 제외 (항상 포함되며 제외 대상이 아니다)
+  const rosterCandidates = members.filter((m) => m.id !== event.creator_id);
+  const rosterLimit = Math.max(0, (Number(maxInput) || 0) - 1);
 
   // 과거 날짜 모임은 수정 불가 (URL 직접 접근 방어)
   if (currentDate < today) {
@@ -102,6 +118,13 @@ function EditFormInner({ event, games, today }: EditFormProps) {
       setError(`현재 참석자(${participantCount}명)보다 적게 설정할 수 없습니다.`);
       return;
     }
+    // 캠페인: 지정한 참석자(+룰마)가 바꾸려는 정원을 넘지 않는지 미리 확인
+    if (isCampaign && rosterIds.length + 1 > maxParticipants) {
+      setError(
+        `지정한 참석자(${rosterIds.length}명)와 룰마를 합치면 정원(${maxParticipants}명)을 넘습니다.`,
+      );
+      return;
+    }
 
     setError(null);
     startTransition(async () => {
@@ -128,6 +151,39 @@ function EditFormInner({ event, games, today }: EditFormProps) {
       if (!data || data.length === 0) {
         setError("수정할 수 없습니다. 권한을 확인해주세요.");
         return;
+      }
+
+      // 캠페인: 참석자 지정 변경분(추가/제외)을 반영한다. (권한: 007 정책)
+      if (isCampaign) {
+        const toAdd = rosterIds.filter((id) => !initialRosterIds.includes(id));
+        const toRemove = initialRosterIds.filter(
+          (id) => !rosterIds.includes(id),
+        );
+
+        if (toRemove.length > 0) {
+          const { error: removeErr } = await supabase
+            .from("event_participants")
+            .delete()
+            .eq("event_id", event.id)
+            .in("user_id", toRemove);
+          if (removeErr) {
+            setError(`참석자 제외에 실패했습니다. (${removeErr.message})`);
+            return;
+          }
+        }
+        if (toAdd.length > 0) {
+          const { error: addErr } = await supabase
+            .from("event_participants")
+            .insert(toAdd.map((userId) => ({ event_id: event.id, user_id: userId })));
+          if (addErr) {
+            setError(
+              addErr.message.includes("EVENT_FULL")
+                ? "정원이 가득 차 참석자를 추가하지 못했습니다."
+                : `참석자 추가에 실패했습니다. (${addErr.message})`,
+            );
+            return;
+          }
+        }
       }
 
       router.push(`/?date=${date}`);
@@ -227,11 +283,29 @@ function EditFormInner({ event, games, today }: EditFormProps) {
             name="max_participants"
             min={Math.max(2, participantCount)}
             max={20}
-            defaultValue={event.max_participants}
+            value={maxInput}
+            onChange={(e) => setMaxInput(e.target.value)}
             required
             className={fieldClass}
           />
         </div>
+
+        {/* 캠페인 참석자 지정 (캠페인 모임만 노출) */}
+        {isCampaign && (
+          <div>
+            <p className={labelClass}>참석자 지정</p>
+            <p className="mb-2 text-xs text-zinc-500">
+              룰마인 나는 항상 참석돼요. 함께할 멤버를 추가하거나 제외할 수 있어요.
+            </p>
+            <ParticipantPicker
+              members={rosterCandidates}
+              selectedIds={rosterIds}
+              onChange={setRosterIds}
+              limit={rosterLimit}
+              disabled={isPending}
+            />
+          </div>
+        )}
 
         {/* 보드게임 (선택 항목) */}
         <div>

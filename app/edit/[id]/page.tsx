@@ -5,6 +5,7 @@ import Header from "@/components/header";
 import EditForm from "@/components/edit-form";
 import { createClient } from "@/lib/supabase/server";
 import { todayInSeoul } from "@/lib/dates";
+import type { PickerMember } from "@/components/participant-picker";
 import type { EventWithDetails, Game } from "@/lib/types";
 
 export default function EditPage({
@@ -34,14 +35,21 @@ async function EditContent({ params }: { params: Promise<{ id: string }> }) {
   const today = todayInSeoul();
 
   const supabase = await createClient();
-  const [{ data: event }, { data: games }] = await Promise.all([
-    supabase
-      .from("events")
-      .select("*, games(*), event_participants(*, users(nickname))")
-      .eq("id", id)
-      .maybeSingle(),
-    supabase.from("games").select("*").order("title", { ascending: true }),
-  ]);
+  // members: 캠페인 모임의 참석자 지정 UI 후보 (승인된 유저)
+  const [{ data: event }, { data: games }, { data: memberRows }] =
+    await Promise.all([
+      supabase
+        .from("events")
+        .select("*, games(*), event_participants(*, users(nickname))")
+        .eq("id", id)
+        .maybeSingle(),
+      supabase.from("games").select("*").order("title", { ascending: true }),
+      supabase
+        .from("users")
+        .select("id, nickname")
+        .eq("status", "approved")
+        .order("nickname", { ascending: true }),
+    ]);
 
   if (!event) notFound();
 
@@ -49,6 +57,7 @@ async function EditContent({ params }: { params: Promise<{ id: string }> }) {
     <EditForm
       event={event as EventWithDetails}
       games={(games ?? []) as Game[]}
+      members={(memberRows ?? []) as PickerMember[]}
       today={today}
     />
   );
