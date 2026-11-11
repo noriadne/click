@@ -41,7 +41,7 @@
 - 적용 방법: 없음(코드만 변경). 코드를 1111이 아닌 값으로 바꾸려면 Vercel 환경변수 `MOVED_NOTICE_UNLOCK_CODE`를 추가하고 재배포.
 - 영향 범위: 코드(`proxy.ts`, `lib/moved-notice.ts`).
 - 검증 상태: `npm run build`, `npm run lint` 통과. 실제 배포에서 코드 입력·쿠키 통과 동작은 확인하지 못함.
-- 관련 커밋: (푸시 후 기입)
+- 관련 커밋: `f22b825` (`main`)
 
 ---
 
